@@ -31,7 +31,6 @@ namespace HexaLibrary_BE.Authentication
 
         public DbSet<Notification> Notifications { get; set; }
 
-        public DbSet<PasswordReset> PasswordResets { get; set; }
 
         public DbSet<Reservation> Reservations { get; set; }
     }

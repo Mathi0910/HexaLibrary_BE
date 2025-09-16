@@ -72,7 +72,7 @@ namespace HexaLibrary_BE.Controllers
 
         // ✅ Only Admin & Librarian can create reservations
         [HttpPost]
-        [Authorize(Roles = "Admin,Librarian")]
+        [Authorize(Roles = "User,Admin")]
         public async Task<ActionResult> Create(ReservationDTO dto)
         {
             try
@@ -80,7 +80,7 @@ namespace HexaLibrary_BE.Controllers
                 var reservation = new Reservation
                 {
                     UserId = dto.UserId,
-                    BookId = 0, // ⚠️ Replace with actual BookId from request
+                    BookId = dto.BookId,
                     ReservationDate = dto.ReservationDate,
                     IsFulfilled = dto.IsFulfilled
                 };
@@ -99,7 +99,7 @@ namespace HexaLibrary_BE.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error: {ex.Message}");
+                return StatusCode(500, $"Error adding reservation: {ex.Message}");
             }
         }
 
