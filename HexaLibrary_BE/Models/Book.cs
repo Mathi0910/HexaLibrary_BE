@@ -1,6 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HexaLibrary_BE.Models
 {
@@ -9,38 +8,27 @@ namespace HexaLibrary_BE.Models
         [Key]
         public int BookId { get; set; }
 
-        [Required, StringLength(200)]
+        [Required, MaxLength(200)]
         public string Title { get; set; } = string.Empty;
 
-        [Required, StringLength(100)]
+        [Required, MaxLength(100)]
         public string Author { get; set; } = string.Empty;
 
-        [Required, StringLength(50)]
-        public string ISBN { get; set; } = string.Empty;
+        public string Publisher { get; set; } = string.Empty;
+        public int Year { get; set; }
 
-        [StringLength(100)]
-        public string? Publisher { get; set; }
+        [Required]
+        public int CategoryId { get; set; }
+        public Category Category { get; set; } = null!;
 
-        public DateTime? PublicationDate { get; set; }
-
-        [StringLength(50)]
-        public string? Edition { get; set; }
-
-        [StringLength(50)]
-        public string? Language { get; set; }
-
-         public int? Pages { get; set; }
-
-        [Precision(10, 2)]
-        public decimal? Cost { get; set; }
+        [Required]
+        public int TotalCopies { get; set; }
 
         [Required]
         public int AvailableCopies { get; set; }
 
-        [Required, ForeignKey("Category")]
-        public int CategoryId { get; set; }
-
-        public Category? Category { get; set; }
-
+        // Navigation
+        public ICollection<BorrowedBook> BorrowedBooks { get; set; } = new List<BorrowedBook>();
+        public ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
     }
 }

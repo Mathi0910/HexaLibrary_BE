@@ -1,5 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using HexaLibrary_BE.Authentication;
+using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace HexaLibrary_BE.Models
 {
@@ -8,19 +9,16 @@ namespace HexaLibrary_BE.Models
         [Key]
         public int ResetId { get; set; }
 
-        [Required, ForeignKey("User")]
-        public int UserId { get; set; }
-
-        [Required, StringLength(255)]
-        public string Token { get; set; } = string.Empty;
+        [Required]
+        public string UserId { get; set; } = string.Empty;
+        public ApplicationUser User { get; set; } = null!;
 
         [Required]
-        public DateTime ExpiresAt { get; set; }
+        public string ResetToken { get; set; } = string.Empty;
 
         [Required]
-        public bool Used { get; set; } = false;
+        public DateTime ExpiryDate { get; set; }
 
-       
-
+        public bool IsUsed { get; set; }
     }
 }

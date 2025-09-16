@@ -6,146 +6,194 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HexaLibrary_BE.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
+    [Authorize] // ✅ Require authentication by default
     public class BorrowedBookController : ControllerBase
     {
-        private readonly IBorrowedBookRepository _borrowRepo;
-        private readonly IBookRepository _bookRepo;
+        private readonly IBorrowedBookRepository _borrowedBookRepo;
 
-        public BorrowedBookController(IBorrowedBookRepository borrowRepo, IBookRepository bookRepo)
+        public BorrowedBookController(IBorrowedBookRepository borrowedBookRepo)
         {
-            _borrowRepo = borrowRepo;
-            _bookRepo = bookRepo;
+            _borrowedBookRepo = borrowedBookRepo;
         }
 
-        // POST: api/borrowedbook/borrow
-        [HttpPost("borrow")]
-        [Authorize(Roles = "User")]
-        public async Task<IActionResult> BorrowBook(int userId, int bookId)
+        // ✅ Only Admin & Librarian can see all borrowed books
+        [HttpGet]
+        [Authorize(Roles = "Admin,Librarian")]
+        public async Task<ActionResult<IEnumerable<BorrowedBookDTO>>> GetAll()
         {
             try
             {
-                var book = await _bookRepo.GetByIdAsync(bookId);
-                if (book == null || book.AvailableCopies <= 0)
-                    return BadRequest(new { Message = "Book not available" });
-
-                var borrow = new BorrowedBook
+                var borrows = await _borrowedBookRepo.GetAllAsync();
+                var dto = borrows.Select(x => new BorrowedBookDTO
                 {
-                    UserId = userId,
-                    BookId = bookId,
-                    BorrowDate = DateTime.Now,
-                    DueDate = DateTime.Now.AddDays(14), // 2 weeks
-                    Status = "Borrowed",
-                    FineAmount = 0
+                    BorrowId = x.BorrowId,
+                    UserId = x.UserId,
+                    BookTitle = x.Book.Title,
+                    BorrowDate = x.BorrowDate,
+                    ReturnDate = x.ReturnDate,
+                    IsReturned = x.IsReturned
+                }).ToList();
+
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
+        }
+
+        // ✅ Admin/Librarian can fetch by id
+        [HttpGet("{id}")]
+        [Authorize(Roles = "Admin,Librarian")]
+        public async Task<ActionResult<BorrowedBookDTO>> GetById(int id)
+        {
+            try
+            {
+                var borrow = await _borrowedBookRepo.GetByIdAsync(id);
+                if (borrow == null) return NotFound($"Borrowed book with ID {id} not found");
+
+                var dto = new BorrowedBookDTO
+                {
+                    BorrowId = borrow.BorrowId,
+                    UserId = borrow.UserId,
+                    BookTitle = borrow.Book.Title,
+                    BorrowDate = borrow.BorrowDate,
+                    ReturnDate = borrow.ReturnDate,
+                    IsReturned = borrow.IsReturned
                 };
 
-                await _borrowRepo.AddAsync(borrow);
-
-                // decrease available copies
-                book.AvailableCopies -= 1;
-                await _bookRepo.UpdateAsync(book);
-
-                return Ok(new { Message = "Book borrowed successfully!" });
+                return Ok(dto);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error borrowing book", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // POST: api/borrowedbook/return
-        [HttpPost("return")]
-        [Authorize(Roles = "User,Admin")]
-        public async Task<IActionResult> ReturnBook(int borrowId)
+        // ✅ Only Admin/Librarian can create borrow records
+        [HttpPost]
+        [Authorize(Roles = "Admin,Librarian")]
+        public async Task<ActionResult> Create(BorrowedBookDTO dto)
         {
             try
             {
-                var borrow = await _borrowRepo.GetByIdAsync(borrowId);
-                if (borrow == null || borrow.ReturnDate != null)
-                    return BadRequest(new { Message = "Invalid borrow record" });
-
-                borrow.ReturnDate = DateTime.Now;
-                borrow.Status = "Returned";
-
-                // fine calculation
-                if (borrow.ReturnDate > borrow.DueDate)
+                var borrow = new BorrowedBook
                 {
-                    var overdueDays = (borrow.ReturnDate.Value - borrow.DueDate).Days;
-                    borrow.FineAmount = overdueDays * 5; // ₹5 per day fine
-                }
+                    UserId = dto.UserId,
+                    BookId = 0, // ⚠️ Replace with actual BookId
+                    BorrowDate = dto.BorrowDate,
+                    ReturnDate = dto.ReturnDate,
+                    IsReturned = dto.IsReturned
+                };
 
-                await _borrowRepo.UpdateAsync(borrow);
-
-                // increase available copies
-                var book = await _bookRepo.GetByIdAsync(borrow.BookId);
-                if (book != null)
-                {
-                    book.AvailableCopies += 1;
-                    await _bookRepo.UpdateAsync(book);
-                }
-
-                return Ok(new { Message = "Book returned successfully!", Fine = borrow.FineAmount });
+                await _borrowedBookRepo.AddAsync(borrow);
+                return CreatedAtAction(nameof(GetById), new { id = borrow.BorrowId }, dto);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error returning book", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // GET: api/borrowedbook/history/{userId}
-        [HttpGet("history/{userId}")]
-        [Authorize(Roles = "User,Admin")]
-        public async Task<ActionResult<IEnumerable<BorrowedBookDTO>>> GetUserHistory(int userId)
+        // ✅ Only Admin/Librarian can update borrow records
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Librarian")]
+        public async Task<ActionResult> Update(int id, BorrowedBookDTO dto)
         {
             try
             {
-                var history = await _borrowRepo.GetBorrowingHistoryAsync(userId);
-                if (history == null || !history.Any())
-                    return NotFound(new { Message = $"No borrowing history found for user {userId}" });
+                var existing = await _borrowedBookRepo.GetByIdAsync(id);
+                if (existing == null) return NotFound($"Borrowed book with ID {id} not found");
 
-                var dtos = history.Select(b => new BorrowedBookDTO
-                {
-                    BorrowId = b.BorrowId,
-                    BookTitle = b.Book?.Title ?? "Unknown",
-                    BorrowDate = b.BorrowDate,
-                    DueDate = b.DueDate,
-                    ReturnDate = b.ReturnDate
-                }).ToList();
+                existing.BorrowDate = dto.BorrowDate;
+                existing.ReturnDate = dto.ReturnDate;
+                existing.IsReturned = dto.IsReturned;
 
-                return Ok(dtos);
+                await _borrowedBookRepo.UpdateAsync(existing);
+                return NoContent();
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error fetching borrowing history", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // GET: api/borrowedbook/overdue
-        [HttpGet("overdue")]
+        // ✅ Only Admin can delete borrow records
+        [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<IEnumerable<BorrowedBookDTO>>> GetOverdueBooks()
+        public async Task<ActionResult> Delete(int id)
         {
             try
             {
-                var overdue = await _borrowRepo.GetOverdueBooksAsync();
-                if (overdue == null || !overdue.Any())
-                    return NotFound(new { Message = "No overdue books found" });
+                var existing = await _borrowedBookRepo.GetByIdAsync(id);
+                if (existing == null) return NotFound($"Borrowed book with ID {id} not found");
 
-                var dtos = overdue.Select(b => new BorrowedBookDTO
-                {
-                    BorrowId = b.BorrowId,
-                    BookTitle = b.Book?.Title ?? "Unknown",
-                    BorrowDate = b.BorrowDate,
-                    DueDate = b.DueDate,
-                    ReturnDate = b.ReturnDate
-                }).ToList();
-
-                return Ok(dtos);
+                await _borrowedBookRepo.DeleteAsync(id);
+                return NoContent();
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error fetching overdue books", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
+        }
+
+        // ✅ Normal users can view only their own borrow records
+        [HttpGet("user/{userId}")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<BorrowedBookDTO>>> GetByUserId(string userId)
+        {
+            try
+            {
+                if (!User.IsInRole("Admin") && !User.IsInRole("Librarian"))
+                {
+                    var currentUserId = User?.Identity?.Name;
+                    if (currentUserId != userId) return Forbid();
+                }
+
+                var borrows = await _borrowedBookRepo.GetByUserIdAsync(userId);
+                var dto = borrows.Select(x => new BorrowedBookDTO
+                {
+                    BorrowId = x.BorrowId,
+                    UserId = x.UserId,
+                    BookTitle = x.Book.Title,
+                    BorrowDate = x.BorrowDate,
+                    ReturnDate = x.ReturnDate,
+                    IsReturned = x.IsReturned
+                }).ToList();
+
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
+        }
+
+        // ✅ Any authenticated user can view active borrows
+        [HttpGet("active")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<BorrowedBookDTO>>> GetActiveBorrows()
+        {
+            try
+            {
+                var borrows = await _borrowedBookRepo.GetActiveBorrowsAsync();
+                var dto = borrows.Select(x => new BorrowedBookDTO
+                {
+                    BorrowId = x.BorrowId,
+                    UserId = x.UserId,
+                    BookTitle = x.Book.Title,
+                    BorrowDate = x.BorrowDate,
+                    ReturnDate = x.ReturnDate,
+                    IsReturned = x.IsReturned
+                }).ToList();
+
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
     }

@@ -1,5 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using HexaLibrary_BE.Authentication;
+using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace HexaLibrary_BE.Models
 {
@@ -8,20 +9,17 @@ namespace HexaLibrary_BE.Models
         [Key]
         public int ReservationId { get; set; }
 
-        [Required, ForeignKey("User")]
-        public int UserId { get; set; }
-
-        [Required, ForeignKey("Book")]
-        public int BookId { get; set; }
+        [Required]
+        public string UserId { get; set; } = string.Empty;
+        public ApplicationUser User { get; set; } = null!;
 
         [Required]
-        public DateTime ReservationDate { get; set; } = DateTime.Now;
+        public int BookId { get; set; }
+        public Book Book { get; set; } = null!;
 
-        [Required, StringLength(50)]
-        public string Status { get; set; } = string.Empty;
+        [Required]
+        public DateTime ReservationDate { get; set; }
 
-        
-        public Book? Book { get; set; }
-        public string? User { get; internal set; }
+        public bool IsFulfilled { get; set; }
     }
 }

@@ -109,22 +109,20 @@ namespace HexaLibrary_BE.Migrations
 
                     b.Property<string>("Action")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("ActionTime")
+                    b.Property<DateTime>("ActionDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Details")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("LogId");
 
-                    b.ToTable("ActionLog");
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ActionLogs");
                 });
 
             modelBuilder.Entity("HexaLibrary_BE.Models.Book", b =>
@@ -146,43 +144,26 @@ namespace HexaLibrary_BE.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
-                    b.Property<decimal?>("Cost")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10,2)");
-
-                    b.Property<string>("Edition")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ISBN")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Language")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int?>("Pages")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("PublicationDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Publisher")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<int>("TotalCopies")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
                     b.HasKey("BookId");
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("Book");
+                    b.ToTable("Books");
                 });
 
             modelBuilder.Entity("HexaLibrary_BE.Models.BorrowedBook", b =>
@@ -199,29 +180,23 @@ namespace HexaLibrary_BE.Migrations
                     b.Property<DateTime>("BorrowDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("DueDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal?>("FineAmount")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10,2)");
+                    b.Property<bool>("IsReturned")
+                        .HasColumnType("bit");
 
                     b.Property<DateTime?>("ReturnDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Status")
+                    b.Property<string>("UserId")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("BorrowId");
 
                     b.HasIndex("BookId");
 
-                    b.ToTable("BorrowedBook");
+                    b.HasIndex("UserId");
+
+                    b.ToTable("BorrowedBooks");
                 });
 
             modelBuilder.Entity("HexaLibrary_BE.Models.Category", b =>
@@ -232,14 +207,14 @@ namespace HexaLibrary_BE.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CategoryId"));
 
-                    b.Property<string>("CategoryName")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("CategoryId");
 
-                    b.ToTable("Category");
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("HexaLibrary_BE.Models.Notification", b =>
@@ -250,24 +225,25 @@ namespace HexaLibrary_BE.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationId"));
 
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<DateTime>("SentAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Type")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("NotificationId");
 
-                    b.ToTable("Notification");
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("HexaLibrary_BE.Models.PasswordReset", b =>
@@ -278,23 +254,25 @@ namespace HexaLibrary_BE.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ResetId"));
 
-                    b.Property<DateTime>("ExpiresAt")
+                    b.Property<DateTime>("ExpiryDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<bool>("Used")
+                    b.Property<bool>("IsUsed")
                         .HasColumnType("bit");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
+                    b.Property<string>("ResetToken")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("ResetId");
 
-                    b.ToTable("PasswordReset");
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PasswordResets");
                 });
 
             modelBuilder.Entity("HexaLibrary_BE.Models.Reservation", b =>
@@ -308,22 +286,23 @@ namespace HexaLibrary_BE.Migrations
                     b.Property<int>("BookId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsFulfilled")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime>("ReservationDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Status")
+                    b.Property<string>("UserId")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("ReservationId");
 
                     b.HasIndex("BookId");
 
-                    b.ToTable("Reservation");
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Reservations");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -459,10 +438,21 @@ namespace HexaLibrary_BE.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("HexaLibrary_BE.Models.ActionLog", b =>
+                {
+                    b.HasOne("HexaLibrary_BE.Authentication.ApplicationUser", "User")
+                        .WithMany("ActionLogs")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("HexaLibrary_BE.Models.Book", b =>
                 {
                     b.HasOne("HexaLibrary_BE.Models.Category", "Category")
-                        .WithMany()
+                        .WithMany("Books")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -473,23 +463,61 @@ namespace HexaLibrary_BE.Migrations
             modelBuilder.Entity("HexaLibrary_BE.Models.BorrowedBook", b =>
                 {
                     b.HasOne("HexaLibrary_BE.Models.Book", "Book")
-                        .WithMany()
+                        .WithMany("BorrowedBooks")
                         .HasForeignKey("BookId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("HexaLibrary_BE.Authentication.ApplicationUser", "User")
+                        .WithMany("BorrowedBooks")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Book");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("HexaLibrary_BE.Models.Notification", b =>
+                {
+                    b.HasOne("HexaLibrary_BE.Authentication.ApplicationUser", "User")
+                        .WithMany("Notifications")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("HexaLibrary_BE.Models.PasswordReset", b =>
+                {
+                    b.HasOne("HexaLibrary_BE.Authentication.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("HexaLibrary_BE.Models.Reservation", b =>
                 {
                     b.HasOne("HexaLibrary_BE.Models.Book", "Book")
-                        .WithMany()
+                        .WithMany("Reservations")
                         .HasForeignKey("BookId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("HexaLibrary_BE.Authentication.ApplicationUser", "User")
+                        .WithMany("Reservations")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Book");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -541,6 +569,29 @@ namespace HexaLibrary_BE.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("HexaLibrary_BE.Authentication.ApplicationUser", b =>
+                {
+                    b.Navigation("ActionLogs");
+
+                    b.Navigation("BorrowedBooks");
+
+                    b.Navigation("Notifications");
+
+                    b.Navigation("Reservations");
+                });
+
+            modelBuilder.Entity("HexaLibrary_BE.Models.Book", b =>
+                {
+                    b.Navigation("BorrowedBooks");
+
+                    b.Navigation("Reservations");
+                });
+
+            modelBuilder.Entity("HexaLibrary_BE.Models.Category", b =>
+                {
+                    b.Navigation("Books");
                 });
 #pragma warning restore 612, 618
         }

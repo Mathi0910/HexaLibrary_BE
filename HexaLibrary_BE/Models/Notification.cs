@@ -1,5 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using HexaLibrary_BE.Authentication;
+using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace HexaLibrary_BE.Models
 {
@@ -8,19 +9,16 @@ namespace HexaLibrary_BE.Models
         [Key]
         public int NotificationId { get; set; }
 
-        [Required, ForeignKey("User")]
-        public int UserId { get; set; }
-
-        [Required, StringLength(255)]
-        public string Message { get; set; } = string.Empty;
+        [Required]
+        public string UserId { get; set; } = string.Empty;
+        public ApplicationUser User { get; set; } = null!;
 
         [Required]
-        public DateTime SentAt { get; set; } = DateTime.Now;
+        public string Message { get; set; } = string.Empty;
 
-        [StringLength(50)]
-        public string? Type { get; set; }
+        public bool IsRead { get; set; }
 
-        
-
+        [Required]
+        public DateTime CreatedAt { get; set; }
     }
 }

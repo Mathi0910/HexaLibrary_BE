@@ -6,8 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HexaLibrary_BE.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
+    [Authorize] // ✅ Require authentication by default
     public class NotificationController : ControllerBase
     {
         private readonly INotificationRepository _notificationRepo;
@@ -17,112 +18,182 @@ namespace HexaLibrary_BE.Controllers
             _notificationRepo = notificationRepo;
         }
 
-        // GET: api/notification/user/{userId}
-        [HttpGet("user/{userId}")]
-        [Authorize(Roles = "User,Admin")]
-        public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetByUser(int userId)
+        // ✅ Only Admin & Librarian can see all notifications
+        [HttpGet]
+        [Authorize(Roles = "Admin,Librarian")]
+        public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetAll()
         {
             try
             {
-                var notifications = await _notificationRepo.GetNotificationsByUserAsync(userId);
-                if (notifications == null || !notifications.Any())
-                    return NotFound(new { Message = $"No notifications found for user {userId}" });
-
-                var dtos = notifications.Select(n => new NotificationDTO
+                var notifications = await _notificationRepo.GetAllAsync();
+                var dto = notifications.Select(x => new NotificationDTO
                 {
-                    NotificationId = n.NotificationId,
-                    Message = n.Message,
-                    SentAt = n.SentAt,
-                    Type = n.Type
+                    NotificationId = x.NotificationId,
+                    UserId = x.UserId,
+                    Message = x.Message,
+                    IsRead = x.IsRead,
+                    CreatedAt = x.CreatedAt
                 }).ToList();
 
-                return Ok(dtos);
+                return Ok(dto);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error fetching notifications by user", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // GET: api/notification/user/{userId}/unread
-        [HttpGet("user/{userId}/unread")]
-        [Authorize(Roles = "User,Admin")]
-        public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetUnread(int userId)
+        // ✅ Only Admin & Librarian can view by ID
+        [HttpGet("{id}")]
+        [Authorize(Roles = "Admin,Librarian")]
+        public async Task<ActionResult<NotificationDTO>> GetById(int id)
         {
             try
             {
-                var notifications = await _notificationRepo.GetUnreadNotificationsAsync(userId);
-                if (notifications == null || !notifications.Any())
-                    return NotFound(new { Message = $"No unread notifications for user {userId}" });
+                var notification = await _notificationRepo.GetByIdAsync(id);
+                if (notification == null) return NotFound($"Notification with ID {id} not found");
 
-                var dtos = notifications.Select(n => new NotificationDTO
+                var dto = new NotificationDTO
                 {
-                    NotificationId = n.NotificationId,
-                    Message = n.Message,
-                    SentAt = n.SentAt,
-                    Type = n.Type
-                }).ToList();
+                    NotificationId = notification.NotificationId,
+                    UserId = notification.UserId,
+                    Message = notification.Message,
+                    IsRead = notification.IsRead,
+                    CreatedAt = notification.CreatedAt
+                };
 
-                return Ok(dtos);
+                return Ok(dto);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error fetching unread notifications", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // GET: api/notification/type/{type}
-        [HttpGet("type/{type}")]
-        [Authorize(Roles = "User,Admin")]
-        public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetByType(string type)
-        {
-            try
-            {
-                var notifications = await _notificationRepo.GetNotificationsByTypeAsync(type);
-                if (notifications == null || !notifications.Any())
-                    return NotFound(new { Message = $"No notifications of type '{type}' found" });
-
-                var dtos = notifications.Select(n => new NotificationDTO
-                {
-                    NotificationId = n.NotificationId,
-                    Message = n.Message,
-                    SentAt = n.SentAt,
-                    Type = n.Type
-                }).ToList();
-
-                return Ok(dtos);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Message = "Error fetching notifications by type", Details = ex.Message });
-            }
-        }
-
-        // POST: api/notification
+        // ✅ Only Admin can create notifications
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<NotificationDTO>> Create([FromBody] NotificationDTO dto)
+        public async Task<ActionResult> Create(NotificationDTO dto)
         {
             try
             {
-                if (dto == null) return BadRequest(new { Message = "Invalid notification data" });
-
                 var notification = new Notification
                 {
-                    UserId = 1, // 👉 for demo, replace with dto.UserId if extended
+                    UserId = dto.UserId,
                     Message = dto.Message,
-                    SentAt = dto.SentAt,
-                    Type = dto.Type
+                    IsRead = dto.IsRead,
+                    CreatedAt = dto.CreatedAt
                 };
 
                 await _notificationRepo.AddAsync(notification);
-
-                dto.NotificationId = notification.NotificationId;
-                return CreatedAtAction(nameof(GetByUser), new { userId = notification.UserId }, dto);
+                return CreatedAtAction(nameof(GetById), new { id = notification.NotificationId }, dto);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error creating notification", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
+        }
+
+        // ✅ Only Admin can update notifications
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult> Update(int id, NotificationDTO dto)
+        {
+            try
+            {
+                var existing = await _notificationRepo.GetByIdAsync(id);
+                if (existing == null) return NotFound($"Notification with ID {id} not found");
+
+                existing.Message = dto.Message;
+                existing.IsRead = dto.IsRead;
+
+                await _notificationRepo.UpdateAsync(existing);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
+        }
+
+        // ✅ Only Admin can delete notifications
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult> Delete(int id)
+        {
+            try
+            {
+                var existing = await _notificationRepo.GetByIdAsync(id);
+                if (existing == null) return NotFound($"Notification with ID {id} not found");
+
+                await _notificationRepo.DeleteAsync(id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
+        }
+
+        // ✅ Users can only see their own notifications
+        [HttpGet("user/{userId}")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetByUserId(string userId)
+        {
+            try
+            {
+                if (!User.IsInRole("Admin") && !User.IsInRole("Librarian"))
+                {
+                    var currentUserId = User?.Identity?.Name;
+                    if (currentUserId != userId) return Forbid();
+                }
+
+                var notifications = await _notificationRepo.GetByUserIdAsync(userId);
+                var dto = notifications.Select(x => new NotificationDTO
+                {
+                    NotificationId = x.NotificationId,
+                    UserId = x.UserId,
+                    Message = x.Message,
+                    IsRead = x.IsRead,
+                    CreatedAt = x.CreatedAt
+                }).ToList();
+
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
+        }
+
+        // ✅ Users can only see their own unread notifications
+        [HttpGet("user/{userId}/unread")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetUnreadByUserId(string userId)
+        {
+            try
+            {
+                if (!User.IsInRole("Admin") && !User.IsInRole("Librarian"))
+                {
+                    var currentUserId = User?.Identity?.Name;
+                    if (currentUserId != userId) return Forbid();
+                }
+
+                var notifications = await _notificationRepo.GetUnreadByUserIdAsync(userId);
+                var dto = notifications.Select(x => new NotificationDTO
+                {
+                    NotificationId = x.NotificationId,
+                    UserId = x.UserId,
+                    Message = x.Message,
+                    IsRead = x.IsRead,
+                    CreatedAt = x.CreatedAt
+                }).ToList();
+
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
     }

@@ -6,127 +6,188 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HexaLibrary_BE.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
+    [Authorize] // ✅ Require authentication unless overridden
     public class ReservationController : ControllerBase
     {
         private readonly IReservationRepository _reservationRepo;
-        private readonly IBookRepository _bookRepo;
 
-        public ReservationController(IReservationRepository reservationRepo, IBookRepository bookRepo)
+        public ReservationController(IReservationRepository reservationRepo)
         {
             _reservationRepo = reservationRepo;
-            _bookRepo = bookRepo;
         }
 
-        // POST: api/reservation/reserve
-        [HttpPost("reserve")]
-        [Authorize(Roles = "User,Admin")]
-        public async Task<IActionResult> ReserveBook(int userId, int bookId)
+        // ✅ Only Admin & Librarian can view all reservations
+        [HttpGet]
+        [Authorize(Roles = "Admin,Librarian")]
+        public async Task<ActionResult<IEnumerable<ReservationDTO>>> GetAll()
         {
             try
             {
-                var book = await _bookRepo.GetByIdAsync(bookId);
-                if (book == null) return NotFound(new { Message = "Book not found" });
+                var reservations = await _reservationRepo.GetAllAsync();
+                var dto = reservations.Select(x => new ReservationDTO
+                {
+                    ReservationId = x.ReservationId,
+                    UserId = x.UserId,
+                    BookTitle = x.Book.Title,
+                    ReservationDate = x.ReservationDate,
+                    IsFulfilled = x.IsFulfilled
+                }).ToList();
 
-                // Only allow reservation if no copies available
-                if (book.AvailableCopies > 0)
-                    return BadRequest(new { Message = "Book is available, no need to reserve" });
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
+        }
 
-                var existing = await _reservationRepo.GetReservationByBookAsync(bookId);
-                if (existing != null && existing.UserId == userId && existing.Status == "Active")
-                    return BadRequest(new { Message = "You already reserved this book" }); 
+        // ✅ Only Admin & Librarian can view by ID
+        [HttpGet("{id}")]
+        [Authorize(Roles = "Admin,Librarian")]
+        public async Task<ActionResult<ReservationDTO>> GetById(int id)
+        {
+            try
+            {
+                var reservation = await _reservationRepo.GetByIdAsync(id);
+                if (reservation == null) return NotFound($"Reservation with ID {id} not found");
+
+                var dto = new ReservationDTO
+                {
+                    ReservationId = reservation.ReservationId,
+                    UserId = reservation.UserId,
+                    BookTitle = reservation.Book.Title,
+                    ReservationDate = reservation.ReservationDate,
+                    IsFulfilled = reservation.IsFulfilled
+                };
+
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
+        }
+
+        // ✅ Only Admin & Librarian can create reservations
+        [HttpPost]
+        [Authorize(Roles = "Admin,Librarian")]
+        public async Task<ActionResult> Create(ReservationDTO dto)
+        {
+            try
+            {
                 var reservation = new Reservation
                 {
-                    UserId = userId,
-                    BookId = bookId,
-                    ReservationDate = DateTime.Now,
-                    Status = "Active"
+                    UserId = dto.UserId,
+                    BookId = 0, // ⚠️ Replace with actual BookId from request
+                    ReservationDate = dto.ReservationDate,
+                    IsFulfilled = dto.IsFulfilled
                 };
 
                 await _reservationRepo.AddAsync(reservation);
-                return Ok(new { Message = "Book reserved successfully" });
+                return CreatedAtAction(nameof(GetById), new { id = reservation.ReservationId }, dto);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error reserving book", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // POST: api/reservation/cancel/{reservationId}
-        [HttpPost("cancel/{reservationId}")]
-        [Authorize(Roles = "User,Admin")]
-        public async Task<IActionResult> CancelReservation(int reservationId)
+        // ✅ Only Admin & Librarian can update reservations
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Librarian")]
+        public async Task<ActionResult> Update(int id, ReservationDTO dto)
         {
             try
             {
-                var reservation = await _reservationRepo.GetByIdAsync(reservationId);
-                if (reservation == null) return NotFound(new { Message = "Reservation not found" });
+                var existing = await _reservationRepo.GetByIdAsync(id);
+                if (existing == null) return NotFound($"Reservation with ID {id} not found");
 
-                reservation.Status = "Cancelled";
-                await _reservationRepo.UpdateAsync(reservation);
+                existing.ReservationDate = dto.ReservationDate;
+                existing.IsFulfilled = dto.IsFulfilled;
 
-                return Ok(new { Message = "Reservation cancelled successfully" });
+                await _reservationRepo.UpdateAsync(existing);
+                return NoContent();
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error cancelling reservation", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // GET: api/reservation/user/{userId}
+        // ✅ Only Admin can delete reservations
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult> Delete(int id)
+        {
+            try
+            {
+                var existing = await _reservationRepo.GetByIdAsync(id);
+                if (existing == null) return NotFound($"Reservation with ID {id} not found");
+
+                await _reservationRepo.DeleteAsync(id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
+        }
+
+        // ✅ Normal users can only view their own reservations
         [HttpGet("user/{userId}")]
-        [Authorize(Roles = "User,Admin")]
-        public async Task<ActionResult<IEnumerable<ReservationDTO>>> GetByUser(int userId)
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<ReservationDTO>>> GetByUserId(string userId)
         {
             try
             {
-                var reservations = await _reservationRepo.GetReservationsByUserAsync(userId);
-                if (reservations == null || !reservations.Any())
-                    return NotFound(new { Message = $"No reservations found for user {userId}" });
-
-                var dtos = reservations.Select(r => new ReservationDTO
+                if (!User.IsInRole("Admin") && !User.IsInRole("Librarian"))
                 {
-                    ReservationId = r.ReservationId,
-                    BookTitle = r.Book?.Title ?? "Unknown",
-                    UserName = "N/A",
-                    ReservationDate = r.ReservationDate,
-                    Status = r.Status
+                    var currentUserId = User?.Identity?.Name;
+                    if (currentUserId != userId) return Forbid();
+                }
+
+                var reservations = await _reservationRepo.GetByUserIdAsync(userId);
+                var dto = reservations.Select(x => new ReservationDTO
+                {
+                    ReservationId = x.ReservationId,
+                    UserId = x.UserId,
+                    BookTitle = x.Book.Title,
+                    ReservationDate = x.ReservationDate,
+                    IsFulfilled = x.IsFulfilled
                 }).ToList();
 
-                return Ok(dtos);
+                return Ok(dto);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error fetching reservations by user", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // GET: api/reservation/active
+        // ✅ Any authenticated user can view active reservations
         [HttpGet("active")]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<IEnumerable<ReservationDTO>>> GetActive()
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<ReservationDTO>>> GetActiveReservations()
         {
             try
             {
                 var reservations = await _reservationRepo.GetActiveReservationsAsync();
-                if (reservations == null || !reservations.Any())
-                    return NotFound(new { Message = "No active reservations found" });
-
-                var dtos = reservations.Select(r => new ReservationDTO
+                var dto = reservations.Select(x => new ReservationDTO
                 {
-                    ReservationId = r.ReservationId,
-                    BookTitle = r.Book?.Title ?? "Unknown",
-                    UserName = "N/A",
-                    ReservationDate = r.ReservationDate,
-                    Status = r.Status
+                    ReservationId = x.ReservationId,
+                    UserId = x.UserId,
+                    BookTitle = x.Book.Title,
+                    ReservationDate = x.ReservationDate,
+                    IsFulfilled = x.IsFulfilled
                 }).ToList();
 
-                return Ok(dtos);
+                return Ok(dto);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error fetching active reservations", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
     }

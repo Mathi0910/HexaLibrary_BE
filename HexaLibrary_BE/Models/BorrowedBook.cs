@@ -1,6 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using HexaLibrary_BE.Authentication;
+using System;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HexaLibrary_BE.Models
 {
@@ -9,28 +9,19 @@ namespace HexaLibrary_BE.Models
         [Key]
         public int BorrowId { get; set; }
 
-        [Required, ForeignKey("User")]
-        public int UserId { get; set; }
+        [Required]
+        public string UserId { get; set; } = string.Empty;
+        public ApplicationUser User { get; set; } = null!;
 
-        [Required, ForeignKey("Book")]
+        [Required]
         public int BookId { get; set; }
+        public Book Book { get; set; } = null!;
 
         [Required]
         public DateTime BorrowDate { get; set; }
 
-        [Required]
-        public DateTime DueDate { get; set; }
-
         public DateTime? ReturnDate { get; set; }
 
-        [Precision(10, 2)]
-        public decimal? FineAmount { get; set; } = 0;
-
-        [Required, StringLength(50)]
-        public string Status { get; set; } = string.Empty;
-
-        
-        public Book? Book { get; set; }
-
+        public bool IsReturned { get; set; }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace HexaLibrary_BE.Models
 {
@@ -7,8 +8,9 @@ namespace HexaLibrary_BE.Models
         [Key]
         public int CategoryId { get; set; }
 
-        [Required, StringLength(100)]
-        public string CategoryName { get; set; } = string.Empty;
+        [Required, MaxLength(100)]
+        public string Name { get; set; } = string.Empty;
 
+        public ICollection<Book> Books { get; set; } = new List<Book>();
     }
 }

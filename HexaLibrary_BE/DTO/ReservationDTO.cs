@@ -1,21 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace HexaLibrary_BE.DTOs
+﻿namespace HexaLibrary_BE.DTOs
 {
     public class ReservationDTO
     {
         public int ReservationId { get; set; }
-
-        [Required]
+        public string UserId { get; set; } = string.Empty;
         public string BookTitle { get; set; } = string.Empty;
-
-        [Required]
-        public string UserName { get; set; } = string.Empty;
-
-        [Required]
         public DateTime ReservationDate { get; set; }
-
-        [Required, StringLength(50)]
-        public string Status { get; set; } = string.Empty;
+        public bool IsFulfilled { get; set; }
     }
 }

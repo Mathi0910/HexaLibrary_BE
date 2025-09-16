@@ -1,4 +1,5 @@
 ﻿using HexaLibrary_BE.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -30,6 +31,7 @@ namespace HexaLibrary_BE.Controllers
 
         // POST: api/authentication/register
         [HttpPost("Register")]
+        [AllowAnonymous] // ✅ Anyone can register
         public async Task<IActionResult> Register([FromBody] RegisterModel registerModel)
         {
             try
@@ -79,6 +81,7 @@ namespace HexaLibrary_BE.Controllers
 
         // POST: api/authentication/login
         [HttpPost("Login")]
+        [AllowAnonymous] // ✅ Anyone can login
         public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
         {
             try
@@ -128,5 +131,7 @@ namespace HexaLibrary_BE.Controllers
                 return StatusCode(500, new { Message = "Error logging in", Details = ex.Message });
             }
         }
+
+        
     }
 }

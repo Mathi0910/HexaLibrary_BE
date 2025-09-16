@@ -40,17 +40,18 @@ builder.Services.AddAuthentication(options =>
 
     });
 
+builder.Services.AddScoped<IActionLogRepository, ActionLogRepository>();
+builder.Services.AddScoped<IBookRepository, BookRepository>();
+builder.Services.AddScoped<IBorrowedBookRepository, BorrowedBookRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IPasswordResetRepository, PasswordResetRepository>();
+builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 
-builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-builder.Services.AddScoped<IBookRepository, BookRepository>();
-builder.Services.AddScoped<IBorrowedBookRepository, BorrowedBookRepository>();
-builder.Services.AddScoped<ICategoryRepository, CategoryBookRepository>();
-builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
-builder.Services.AddScoped<IActionLogRepository, ActionLogRepository>();
-builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
-builder.Services.AddScoped<IPasswordResetRepository, PasswordResetRepository>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {

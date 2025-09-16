@@ -6,8 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HexaLibrary_BE.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
+    [Authorize] // ✅ Require authentication unless overridden
     public class CategoryController : ControllerBase
     {
         private readonly ICategoryRepository _categoryRepo;
@@ -17,7 +18,7 @@ namespace HexaLibrary_BE.Controllers
             _categoryRepo = categoryRepo;
         }
 
-        // GET: api/category
+        // ✅ Allow everyone (even anonymous) to see categories
         [HttpGet]
         [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<CategoryDTO>>> GetAll()
@@ -25,21 +26,22 @@ namespace HexaLibrary_BE.Controllers
             try
             {
                 var categories = await _categoryRepo.GetAllAsync();
-                var dtos = categories.Select(c => new CategoryDTO
+                var dto = categories.Select(x => new CategoryDTO
                 {
-                    CategoryId = c.CategoryId,
-                    CategoryName = c.CategoryName
+                    CategoryId = x.CategoryId,
+                    Name = x.Name,
+                    BookCount = x.Books.Count
                 }).ToList();
 
-                return Ok(dtos);
+                return Ok(dto);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error fetching categories", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // GET: api/category/{id}
+        // ✅ Allow everyone (even anonymous) to view by id
         [HttpGet("{id}")]
         [AllowAnonymous]
         public async Task<ActionResult<CategoryDTO>> GetById(int id)
@@ -47,84 +49,81 @@ namespace HexaLibrary_BE.Controllers
             try
             {
                 var category = await _categoryRepo.GetByIdAsync(id);
-                if (category == null) return NotFound(new { Message = "Category not found" });
+                if (category == null) return NotFound($"Category with ID {id} not found");
 
                 var dto = new CategoryDTO
                 {
                     CategoryId = category.CategoryId,
-                    CategoryName = category.CategoryName
+                    Name = category.Name,
+                    BookCount = category.Books.Count
                 };
 
                 return Ok(dto);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error fetching category by ID", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // POST: api/category
+        // ✅ Only Admin/Librarian can create categories
         [HttpPost]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<CategoryDTO>> Create([FromBody] CategoryDTO dto)
+        [Authorize(Roles = "Admin,Librarian")]
+        public async Task<ActionResult> Create(CategoryDTO dto)
         {
             try
             {
-                if (dto == null) return BadRequest(new { Message = "Invalid category data" });
-
                 var category = new Category
                 {
-                    CategoryName = dto.CategoryName
+                    Name = dto.Name
                 };
 
                 await _categoryRepo.AddAsync(category);
-
-                dto.CategoryId = category.CategoryId;
                 return CreatedAtAction(nameof(GetById), new { id = category.CategoryId }, dto);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error creating category", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // PUT: api/category/{id}
+        // ✅ Only Admin/Librarian can update categories
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update(int id, [FromBody] CategoryDTO dto)
+        [Authorize(Roles = "Admin,Librarian")]
+        public async Task<ActionResult> Update(int id, CategoryDTO dto)
         {
             try
             {
                 var existing = await _categoryRepo.GetByIdAsync(id);
-                if (existing == null) return NotFound(new { Message = "Category not found" });
+                if (existing == null) return NotFound($"Category with ID {id} not found");
 
-                existing.CategoryName = dto.CategoryName;
+                existing.Name = dto.Name;
+
                 await _categoryRepo.UpdateAsync(existing);
-
-                return Ok(new { Message = "Category updated successfully" });
+                return NoContent();
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error updating category", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // DELETE: api/category/{id}
+        // ✅ Only Admin can delete categories
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<ActionResult> Delete(int id)
         {
             try
             {
                 var existing = await _categoryRepo.GetByIdAsync(id);
-                if (existing == null) return NotFound(new { Message = "Category not found" });
+                if (existing == null) return NotFound($"Category with ID {id} not found");
 
                 await _categoryRepo.DeleteAsync(id);
-                return Ok(new { Message = "Category deleted successfully" });
+                return NoContent();
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error deleting category", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
     }

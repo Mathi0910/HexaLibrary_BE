@@ -6,200 +6,159 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HexaLibrary_BE.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
+    [Authorize] // ✅ Require authentication for all actions unless overridden
     public class BookController : ControllerBase
     {
-        private readonly IBookRepository _bookRepository;
-        private readonly ICategoryRepository _categoryRepository;
+        private readonly IBookRepository _bookRepo;
 
-        public BookController(IBookRepository bookRepository, ICategoryRepository categoryRepository)
+        public BookController(IBookRepository bookRepo)
         {
-            _bookRepository = bookRepository;
-            _categoryRepository = categoryRepository;
+            _bookRepo = bookRepo;
         }
 
-        // GET: api/book
+        // ✅ Any authenticated user can see all books
         [HttpGet]
-        [AllowAnonymous]
+        [AllowAnonymous] // (optional) make it public if you want open access
         public async Task<ActionResult<IEnumerable<BookDTO>>> GetAll()
         {
             try
             {
-                var books = await _bookRepository.GetAllAsync();
-                var dtos = books.Select(b => new BookDTO
+                var books = await _bookRepo.GetAllAsync();
+                var dto = books.Select(x => new BookDTO
                 {
-                    BookId = b.BookId,
-                    Title = b.Title,
-                    Author = b.Author,
-                    AvailableCopies = b.AvailableCopies,
-                    CategoryId = b.CategoryId,
+                    BookId = x.BookId,
+                    Title = x.Title,
+                    Author = x.Author,
+                    CategoryName = x.Category.Name,
+                    AvailableCopies = x.AvailableCopies
                 }).ToList();
 
-                return Ok(dtos);
+                return Ok(dto);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error fetching books", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // GET: api/book/{id}
+        // ✅ Any authenticated user can view by id
         [HttpGet("{id}")]
-        [AllowAnonymous]
+        [AllowAnonymous] // (optional) public access
         public async Task<ActionResult<BookDTO>> GetById(int id)
         {
             try
             {
-                var book = await _bookRepository.GetByIdAsync(id);
-                if (book == null) return NotFound(new { Message = "Book not found" });
+                var book = await _bookRepo.GetByIdAsync(id);
+                if (book == null) return NotFound($"Book with ID {id} not found");
 
                 var dto = new BookDTO
                 {
                     BookId = book.BookId,
                     Title = book.Title,
                     Author = book.Author,
-                    AvailableCopies = book.AvailableCopies,
                     CategoryId = book.CategoryId,
+                    CategoryName = book.Category.Name,
+                    AvailableCopies = book.AvailableCopies
                 };
 
                 return Ok(dto);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error fetching book by ID", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // GET: api/book/category/{categoryId}
-        [HttpGet("category/{categoryId}")]
-        [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<BookDTO>>> GetByCategory(int categoryId)
-        {
-            try
-            {
-                var books = await _bookRepository.GetBooksByCategoryAsync(categoryId);
-                if (books == null || !books.Any())
-                    return NotFound(new { Message = "No books found for this category" });
-
-                var dtos = books.Select(b => new BookDTO
-                {
-                    BookId = b.BookId,
-                    Title = b.Title,
-                    Author = b.Author,
-                    AvailableCopies = b.AvailableCopies,
-                    CategoryId = b.CategoryId,
-                });
-
-                return Ok(dtos);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Message = "Error fetching books by category", Details = ex.Message });
-            }
-        }
-
-        // GET: api/book/search?q=keyword
-        [HttpGet("search")]
-        [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<BookDTO>>> Search([FromQuery] string q)
-        {
-            try
-            {
-                var results = string.IsNullOrWhiteSpace(q)
-                    ? await _bookRepository.GetAllAsync()
-                    : await _bookRepository.SearchBooksAsync(q);
-
-                var dtos = results.Select(b => new BookDTO
-                {
-                    BookId = b.BookId,
-                    Title = b.Title,
-                    Author = b.Author,
-                    AvailableCopies = b.AvailableCopies,
-                    CategoryId  = b.CategoryId
-                    
-                }).ToList();
-
-                return Ok(dtos);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Message = "Error searching books", Details = ex.Message });
-            }
-        }
-
-        // POST: api/book
+        // ✅ Only Admin & Librarian can create books
         [HttpPost]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<BookDTO>> Create([FromBody] BookDTO dto)
+        [Authorize(Roles = "Admin,Librarian")]
+        public async Task<ActionResult> Create(BookDTO dto)
         {
             try
             {
-                if (dto == null) return BadRequest(new { Message = "Invalid book data" });
-
-                var cat = await _categoryRepository.GetByIdAsync(dto.CategoryId);
-                if (cat == null)
-                    return BadRequest(new { Message = "Invalid category" });
-
                 var book = new Book
                 {
                     Title = dto.Title,
                     Author = dto.Author,
-                    ISBN = "AUTO-" + dto.Title.Substring(0, 3),
-                    AvailableCopies = dto.AvailableCopies,
-                    CategoryId = cat.CategoryId
+                    CategoryId = dto.CategoryId,  // ✅ use actual category id
+                    AvailableCopies = dto.AvailableCopies
                 };
 
-                await _bookRepository.AddAsync(book);
-                dto.BookId = book.BookId;
-
+                await _bookRepo.AddAsync(book);
                 return CreatedAtAction(nameof(GetById), new { id = book.BookId }, dto);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error creating book", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // PUT: api/book/{id}
+        // ✅ Only Admin & Librarian can update books
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update(int id, [FromBody] BookDTO dto)
+        [Authorize(Roles = "Admin,Librarian")]
+        public async Task<ActionResult> Update(int id, BookDTO dto)
         {
             try
             {
-                var existing = await _bookRepository.GetByIdAsync(id);
-                if (existing == null) return NotFound(new { Message = "Book not found" });
+                var existing = await _bookRepo.GetByIdAsync(id);
+                if (existing == null) return NotFound($"Book with ID {id} not found");
 
                 existing.Title = dto.Title;
                 existing.Author = dto.Author;
                 existing.AvailableCopies = dto.AvailableCopies;
 
-                await _bookRepository.UpdateAsync(existing);
-                return Ok(new { Message = "Book updated successfully" });
+                await _bookRepo.UpdateAsync(existing);
+                return NoContent();
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error updating book", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
 
-        // DELETE: api/book/{id}
+        // ✅ Only Admin can delete books
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<ActionResult> Delete(int id)
         {
             try
             {
-                var existing = await _bookRepository.GetByIdAsync(id);
-                if (existing == null) return NotFound(new { Message = "Book not found" });
+                var existing = await _bookRepo.GetByIdAsync(id);
+                if (existing == null) return NotFound($"Book with ID {id} not found");
 
-                await _bookRepository.DeleteAsync(id);
-                return Ok(new { Message = "Book deleted successfully" });
+                await _bookRepo.DeleteAsync(id);
+                return NoContent();
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error deleting book", Details = ex.Message });
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
+        }
+
+        // ✅ Any authenticated user can view books by category
+        [HttpGet("category/{categoryId}")]
+        [AllowAnonymous] // (optional) public
+        public async Task<ActionResult<IEnumerable<BookDTO>>> GetByCategory(int categoryId)
+        {
+            try
+            {
+                var books = await _bookRepo.GetByCategoryAsync(categoryId);
+                var dto = books.Select(x => new BookDTO
+                {
+                    BookId = x.BookId,
+                    Title = x.Title,
+                    Author = x.Author,
+                    CategoryName = x.Category.Name,
+                    AvailableCopies = x.AvailableCopies
+                }).ToList();
+
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
             }
         }
     }
