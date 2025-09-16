@@ -79,7 +79,14 @@ namespace HexaLibrary_BE.Controllers
                 };
 
                 await _actionLogRepo.AddAsync(log);
-                return CreatedAtAction(nameof(GetById), new { id = log.LogId }, dto);
+                var responseDto = new ActionLogDTO
+                {
+                    LogId = log.LogId,
+                    UserId = log.UserId,
+                    Action = log.Action,
+                    ActionDate = log.ActionDate
+                };
+                return CreatedAtAction(nameof(GetById), new { id = log.LogId }, responseDto);
             }
             catch (Exception ex)
             {

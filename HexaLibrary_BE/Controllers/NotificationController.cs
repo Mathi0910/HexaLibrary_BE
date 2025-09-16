@@ -86,7 +86,15 @@ namespace HexaLibrary_BE.Controllers
                 };
 
                 await _notificationRepo.AddAsync(notification);
-                return CreatedAtAction(nameof(GetById), new { id = notification.NotificationId }, dto);
+                var responseDto = new NotificationDTO
+                {
+                    NotificationId = notification.NotificationId,
+                    UserId = notification.UserId,
+                    Message = notification.Message,
+                    IsRead = notification.IsRead,
+                    CreatedAt = notification.CreatedAt
+                };
+                return CreatedAtAction(nameof(GetById), new { id = notification.NotificationId }, responseDto);
             }
             catch (Exception ex)
             {

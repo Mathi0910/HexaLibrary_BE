@@ -86,7 +86,15 @@ namespace HexaLibrary_BE.Controllers
                 };
 
                 await _passwordResetRepo.AddAsync(reset);
-                return CreatedAtAction(nameof(GetById), new { id = reset.ResetId }, dto);
+                var responseDto = new PasswordResetDTO
+                {
+                    ResetId = reset.ResetId,
+                    UserId = reset.UserId,
+                    ResetToken = reset.ResetToken,
+                    ExpiryDate = reset.ExpiryDate,
+                    IsUsed = reset.IsUsed
+                };
+                return CreatedAtAction(nameof(GetById), new { id = reset.ResetId }, responseDto);
             }
             catch (Exception ex)
             {

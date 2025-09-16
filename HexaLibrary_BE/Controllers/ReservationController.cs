@@ -86,7 +86,16 @@ namespace HexaLibrary_BE.Controllers
                 };
 
                 await _reservationRepo.AddAsync(reservation);
-                return CreatedAtAction(nameof(GetById), new { id = reservation.ReservationId }, dto);
+
+                var responseDto = new ReservationDTO
+                {
+                    ReservationId = reservation.ReservationId,
+                    UserId = reservation.UserId,
+                    BookTitle = reservation.Book?.Title ?? dto.BookTitle ?? string.Empty,
+                    ReservationDate = reservation.ReservationDate,
+                    IsFulfilled = reservation.IsFulfilled
+                };
+                return CreatedAtAction(nameof(GetById), new { id = reservation.ReservationId }, responseDto);
             }
             catch (Exception ex)
             {

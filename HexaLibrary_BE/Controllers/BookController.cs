@@ -86,8 +86,19 @@ namespace HexaLibrary_BE.Controllers
                     AvailableCopies = dto.AvailableCopies
                 };
 
+                //  Use the saved book entity, not dto
+                var responseDto = new BookDTO
+                {
+                    BookId = book.BookId,  // now reflects actual DB value
+                    Title = book.Title,
+                    Author = book.Author,
+                    CategoryId = book.CategoryId,
+                    CategoryName = book.Category?.Name ?? string.Empty,
+                    AvailableCopies = book.AvailableCopies
+                };
+
                 await _bookRepo.AddAsync(book);
-                return CreatedAtAction(nameof(GetById), new { id = book.BookId }, dto);
+                return CreatedAtAction(nameof(GetById), new { id = book.BookId }, responseDto);
             }
             catch (Exception ex)
             {
@@ -150,7 +161,7 @@ namespace HexaLibrary_BE.Controllers
                     BookId = x.BookId,
                     Title = x.Title,
                     Author = x.Author,
-                    CategoryName = x.Category.Name,
+                    CategoryName = x.Category.Name ?? string.Empty,
                     AvailableCopies = x.AvailableCopies
                 }).ToList();
 

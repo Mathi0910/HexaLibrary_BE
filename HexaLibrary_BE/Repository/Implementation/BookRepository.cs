@@ -85,7 +85,10 @@ namespace HexaLibrary_BE.Repository.Implementations
         {
             try
             {
-                return await _context.Books.Where(x => x.CategoryId == categoryId).ToListAsync();
+                return await _context.Books
+                    .Include(x => x.Category)   // ✅ load Category too
+                    .Where(x => x.CategoryId == categoryId)
+                    .ToListAsync();
             }
             catch (Exception ex)
             {

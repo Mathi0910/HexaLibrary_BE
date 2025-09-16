@@ -75,21 +75,37 @@ namespace HexaLibrary_BE.Controllers
         // ✅ Only Admin/Librarian can create borrow records
         [HttpPost]
         [Authorize(Roles = "Admin,Librarian")]
-        public async Task<ActionResult> Create(BorrowedBookDTO dto)
+        public async Task<ActionResult> Create([FromBody] BorrowedBookDTO dto)
         {
             try
             {
                 var borrow = new BorrowedBook
                 {
                     UserId = dto.UserId,
-                    BookId = 0, // ⚠️ Replace with actual BookId
+                    BookId = dto.BookId, 
+                    //BookTitle = dto.BookTitle,
                     BorrowDate = dto.BorrowDate,
                     ReturnDate = dto.ReturnDate,
                     IsReturned = dto.IsReturned
                 };
 
                 await _borrowedBookRepo.AddAsync(borrow);
-                return CreatedAtAction(nameof(GetById), new { id = borrow.BorrowId }, dto);
+
+                // fetch the Book title safely after save
+                var bookEntity = await _borrowedBookRepo.GetByIdAsync(borrow.BorrowId);
+
+                var responseDto = new BorrowedBookDTO
+                {
+                    BorrowId = borrow.BorrowId,
+                    UserId = borrow.UserId,
+                    BookId = borrow.BookId,
+                    BookTitle = bookEntity?.Book?.Title ?? string.Empty,  // ✅ fetch title from DB
+                    BorrowDate = borrow.BorrowDate,
+                    ReturnDate = borrow.ReturnDate,
+                    IsReturned = borrow.IsReturned
+                };
+
+                return CreatedAtAction(nameof(GetById), new { id = borrow.BorrowId }, responseDto);
             }
             catch (Exception ex)
             {

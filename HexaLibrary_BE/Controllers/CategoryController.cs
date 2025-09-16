@@ -79,7 +79,13 @@ namespace HexaLibrary_BE.Controllers
                 };
 
                 await _categoryRepo.AddAsync(category);
-                return CreatedAtAction(nameof(GetById), new { id = category.CategoryId }, dto);
+                var responseDto = new CategoryDTO
+                {
+                    CategoryId = category.CategoryId,
+                    Name = category.Name,
+                    BookCount = category.Books?.Count ?? 0
+                };
+                return CreatedAtAction(nameof(GetById), new { id = category.CategoryId }, responseDto);
             }
             catch (Exception ex)
             {
