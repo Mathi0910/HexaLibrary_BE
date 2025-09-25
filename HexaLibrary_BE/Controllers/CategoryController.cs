@@ -8,7 +8,7 @@ namespace HexaLibrary_BE.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // ✅ Require authentication unless overridden
+    [Authorize] //  Require authentication unless overridden
     public class CategoryController : ControllerBase
     {
         private readonly ICategoryRepository _categoryRepo;
@@ -18,7 +18,7 @@ namespace HexaLibrary_BE.Controllers
             _categoryRepo = categoryRepo;
         }
 
-        // ✅ Allow everyone (even anonymous) to see categories
+        //  Allow everyone (even anonymous) to see categories
         [HttpGet]
         [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<CategoryDTO>>> GetAll()
@@ -41,7 +41,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Allow everyone (even anonymous) to view by id
+        //  Allow everyone (even anonymous) to view by id
         [HttpGet("{id}")]
         [AllowAnonymous]
         public async Task<ActionResult<CategoryDTO>> GetById(int id)
@@ -66,7 +66,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin/Librarian can create categories
+        //  Only Admin/Librarian can create categories
         [HttpPost]
         [Authorize(Roles = "Admin,Librarian")]
         public async Task<ActionResult> Create(CategoryDTO dto)
@@ -93,7 +93,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin/Librarian can update categories
+        //  Only Admin/Librarian can update categories
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin,Librarian")]
         public async Task<ActionResult> Update(int id, CategoryDTO dto)
@@ -114,7 +114,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin can delete categories
+        //  Only Admin can delete categories
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> Delete(int id)

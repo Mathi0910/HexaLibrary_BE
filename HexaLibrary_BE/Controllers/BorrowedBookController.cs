@@ -8,7 +8,7 @@ namespace HexaLibrary_BE.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // ✅ Require authentication by default
+    [Authorize] //  Require authentication by default
     public class BorrowedBookController : ControllerBase
     {
         private readonly IBorrowedBookRepository _borrowedBookRepo;
@@ -18,7 +18,7 @@ namespace HexaLibrary_BE.Controllers
             _borrowedBookRepo = borrowedBookRepo;
         }
 
-        // ✅ Only Admin & Librarian can see all borrowed books
+        //  Only Admin & Librarian can see all borrowed books
         [HttpGet]
         [Authorize(Roles = "Admin,Librarian")]
         public async Task<ActionResult<IEnumerable<BorrowedBookDTO>>> GetAll()
@@ -44,7 +44,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Admin/Librarian can fetch by id
+        //  Admin/Librarian can fetch by id
         [HttpGet("{id}")]
         [Authorize(Roles = "Admin,Librarian")]
         public async Task<ActionResult<BorrowedBookDTO>> GetById(int id)
@@ -72,7 +72,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin/Librarian can create borrow records
+        //  Only Admin/Librarian can create borrow records
         [HttpPost]
         [Authorize(Roles = "Admin,Librarian")]
         public async Task<ActionResult> Create([FromBody] BorrowedBookDTO dto)
@@ -99,7 +99,7 @@ namespace HexaLibrary_BE.Controllers
                     BorrowId = borrow.BorrowId,
                     UserId = borrow.UserId,
                     BookId = borrow.BookId,
-                    BookTitle = bookEntity?.Book?.Title ?? string.Empty,  // ✅ fetch title from DB
+                    BookTitle = bookEntity?.Book?.Title ?? string.Empty,  //  fetch title from DB
                     BorrowDate = borrow.BorrowDate,
                     ReturnDate = borrow.ReturnDate,
                     IsReturned = borrow.IsReturned
@@ -113,7 +113,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin/Librarian can update borrow records
+        //  Only Admin/Librarian can update borrow records
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin,Librarian")]
         public async Task<ActionResult> Update(int id, BorrowedBookDTO dto)
@@ -136,7 +136,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin can delete borrow records
+        //  Only Admin can delete borrow records
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> Delete(int id)
@@ -155,7 +155,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Normal users can view only their own borrow records
+        //  Normal users can view only their own borrow records
         [HttpGet("user/{userId}")]
         [Authorize]
         public async Task<ActionResult<IEnumerable<BorrowedBookDTO>>> GetByUserId(string userId)
@@ -187,7 +187,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Any authenticated user can view active borrows
+        //  Any authenticated user can view active borrows
         [HttpGet("active")]
         [Authorize]
         public async Task<ActionResult<IEnumerable<BorrowedBookDTO>>> GetActiveBorrows()

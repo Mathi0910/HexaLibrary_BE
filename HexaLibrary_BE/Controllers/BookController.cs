@@ -8,7 +8,7 @@ namespace HexaLibrary_BE.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // ✅ Require authentication for all actions unless overridden
+    [Authorize] //  Require authentication for all actions unless overridden
     public class BookController : ControllerBase
     {
         private readonly IBookRepository _bookRepo;
@@ -18,9 +18,9 @@ namespace HexaLibrary_BE.Controllers
             _bookRepo = bookRepo;
         }
 
-        // ✅ Any authenticated user can see all books
+        //  Any authenticated user can see all books
         [HttpGet]
-        [AllowAnonymous] // (optional) make it public if you want open access
+        [AllowAnonymous] //  make it public if you want open access
         public async Task<ActionResult<IEnumerable<BookDTO>>> GetAll()
         {
             try
@@ -43,7 +43,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Any authenticated user can view by id
+        //  Any authenticated user can view by id
         [HttpGet("{id}")]
         [AllowAnonymous] // (optional) public access
         public async Task<ActionResult<BookDTO>> GetById(int id)
@@ -71,7 +71,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin & Librarian can create books
+        //  Only Admin & Librarian can create books
         [HttpPost]
         [Authorize(Roles = "Admin,Librarian")]
         public async Task<ActionResult> Create(BookDTO dto)
@@ -82,7 +82,7 @@ namespace HexaLibrary_BE.Controllers
                 {
                     Title = dto.Title,
                     Author = dto.Author,
-                    CategoryId = dto.CategoryId,  // ✅ use actual category id
+                    CategoryId = dto.CategoryId,  //  use actual category id
                     AvailableCopies = dto.AvailableCopies
                 };
 
@@ -106,7 +106,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin & Librarian can update books
+        //  Only Admin & Librarian can update books
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin,Librarian")]
         public async Task<ActionResult> Update(int id, BookDTO dto)
@@ -129,7 +129,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin can delete books
+        //  Only Admin can delete books
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> Delete(int id)
@@ -148,7 +148,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Any authenticated user can view books by category
+        //  Any authenticated user can view books by category
         [HttpGet("category/{categoryId}")]
         [AllowAnonymous] // (optional) public
         public async Task<ActionResult<IEnumerable<BookDTO>>> GetByCategory(int categoryId)

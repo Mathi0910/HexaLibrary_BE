@@ -8,7 +8,7 @@ namespace HexaLibrary_BE.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // ✅ Require authentication for all endpoints
+    [Authorize] //  Require authentication for all endpoints
     public class ActionLogController : ControllerBase
     {
         private readonly IActionLogRepository _actionLogRepo;
@@ -19,7 +19,7 @@ namespace HexaLibrary_BE.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "Admin,Librarian")] // ✅ Only Admin & Librarian can view all logs
+        [Authorize(Roles = "Admin,Librarian")] //  Only Admin & Librarian can view all logs
         public async Task<ActionResult<IEnumerable<ActionLogDTO>>> GetAll()
         {
             try
@@ -42,7 +42,7 @@ namespace HexaLibrary_BE.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "Admin,Librarian")] // ✅ Restricted to Admin/Librarian
+        [Authorize(Roles = "Admin,Librarian")] //  Restricted to Admin/Librarian
         public async Task<ActionResult<ActionLogDTO>> GetById(int id)
         {
             try
@@ -66,7 +66,7 @@ namespace HexaLibrary_BE.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin,Librarian")] // ✅ Only staff can create logs
+        [Authorize(Roles = "Admin,Librarian")] //  Only staff can create logs
         public async Task<ActionResult> Create(CreateActionLogDTO dto)
         {
             try
@@ -95,7 +95,7 @@ namespace HexaLibrary_BE.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")] // ✅ Only Admin can update logs
+        [Authorize(Roles = "Admin")] //  Only Admin can update logs
         public async Task<ActionResult> Update(int id, ActionLogDTO dto)
         {
             try
@@ -116,7 +116,7 @@ namespace HexaLibrary_BE.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")] // ✅ Only Admin can delete logs
+        [Authorize(Roles = "Admin")] //  Only Admin can delete logs
         public async Task<ActionResult> Delete(int id)
         {
             try
@@ -134,7 +134,7 @@ namespace HexaLibrary_BE.Controllers
         }
 
         [HttpGet("user/{userId}")]
-        [Authorize] // ✅ Any authenticated user can fetch their own logs
+        [Authorize] //  Any authenticated user can fetch their own logs
         public async Task<ActionResult<IEnumerable<ActionLogDTO>>> GetByUserId(string userId)
         {
             try
@@ -144,7 +144,7 @@ namespace HexaLibrary_BE.Controllers
                 {
                     var currentUserId = User?.FindFirst("sub")?.Value ?? User?.Identity?.Name;
                     if (currentUserId != userId)
-                        return Forbid(); // ❌ Block access if not the same user
+                        return Forbid(); //  Block access if not the same user
                 }
 
                 var logs = await _actionLogRepo.GetLogsByUserIdAsync(userId);

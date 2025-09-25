@@ -8,7 +8,7 @@ namespace HexaLibrary_BE.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // ✅ Require authentication by default
+    [Authorize] //  Require authentication by default
     public class NotificationController : ControllerBase
     {
         private readonly INotificationRepository _notificationRepo;
@@ -18,7 +18,7 @@ namespace HexaLibrary_BE.Controllers
             _notificationRepo = notificationRepo;
         }
 
-        // ✅ Only Admin & Librarian can see all notifications
+        //  Only Admin & Librarian can see all notifications
         [HttpGet]
         [Authorize(Roles = "Admin,Librarian")]
         public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetAll()
@@ -43,7 +43,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin & Librarian can view by ID
+        //  Only Admin & Librarian can view by ID
         [HttpGet("{id}")]
         [Authorize(Roles = "Admin,Librarian")]
         public async Task<ActionResult<NotificationDTO>> GetById(int id)
@@ -70,7 +70,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin can create notifications
+        //  Only Admin can create notifications
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> Create(NotificationDTO dto)
@@ -102,7 +102,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin can update notifications
+        //  Only Admin can update notifications
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> Update(int id, NotificationDTO dto)
@@ -124,7 +124,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin can delete notifications
+        //  Only Admin can delete notifications
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> Delete(int id)
@@ -143,7 +143,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Users can only see their own notifications
+        //  Users can only see their own notifications
         [HttpGet("user/{userId}")]
         [Authorize]
         public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetByUserId(string userId)
@@ -174,7 +174,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Users can only see their own unread notifications
+        //  Users can only see their own unread notifications
         [HttpGet("user/{userId}/unread")]
         [Authorize]
         public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetUnreadByUserId(string userId)

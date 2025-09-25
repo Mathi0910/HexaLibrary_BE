@@ -31,7 +31,7 @@ namespace HexaLibrary_BE.Controllers
 
         // POST: api/authentication/register
         [HttpPost("Register")]
-        [AllowAnonymous] // ✅ Anyone can register
+        [AllowAnonymous] //  Anyone can register
         public async Task<IActionResult> Register([FromBody] RegisterModel registerModel)
         {
             try
@@ -81,7 +81,7 @@ namespace HexaLibrary_BE.Controllers
 
         // POST: api/authentication/login
         [HttpPost("Login")]
-        [AllowAnonymous] // ✅ Anyone can login
+        [AllowAnonymous] //  Anyone can login
         public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
         {
             try

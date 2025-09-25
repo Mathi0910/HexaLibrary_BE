@@ -8,7 +8,7 @@ namespace HexaLibrary_BE.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // ✅ Require authentication unless overridden
+    [Authorize] //  Require authentication unless overridden
     public class ReservationController : ControllerBase
     {
         private readonly IReservationRepository _reservationRepo;
@@ -18,7 +18,7 @@ namespace HexaLibrary_BE.Controllers
             _reservationRepo = reservationRepo;
         }
 
-        // ✅ Only Admin & Librarian can view all reservations
+        //  Only Admin & Librarian can view all reservations
         [HttpGet]
         [Authorize(Roles = "Admin,Librarian")]
         public async Task<ActionResult<IEnumerable<ReservationDTO>>> GetAll()
@@ -43,7 +43,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin & Librarian can view by ID
+        //  Only Admin & Librarian can view by ID
         [HttpGet("{id}")]
         [Authorize(Roles = "Admin,Librarian")]
         public async Task<ActionResult<ReservationDTO>> GetById(int id)
@@ -70,7 +70,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin & Librarian can create reservations
+        //  Only Admin & Librarian can create reservations
         [HttpPost]
         [Authorize(Roles = "User,Admin")]
         public async Task<ActionResult> Create(ReservationDTO dto)
@@ -103,7 +103,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin & Librarian can update reservations
+        //  Only Admin & Librarian can update reservations
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin,Librarian")]
         public async Task<ActionResult> Update(int id, ReservationDTO dto)
@@ -125,7 +125,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Only Admin can delete reservations
+        //  Only Admin can delete reservations
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> Delete(int id)
@@ -144,7 +144,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Normal users can only view their own reservations
+        //  Normal users can only view their own reservations
         [HttpGet("user/{userId}")]
         [Authorize]
         public async Task<ActionResult<IEnumerable<ReservationDTO>>> GetByUserId(string userId)
@@ -175,7 +175,7 @@ namespace HexaLibrary_BE.Controllers
             }
         }
 
-        // ✅ Any authenticated user can view active reservations
+        //  Any authenticated user can view active reservations
         [HttpGet("active")]
         [Authorize]
         public async Task<ActionResult<IEnumerable<ReservationDTO>>> GetActiveReservations()
